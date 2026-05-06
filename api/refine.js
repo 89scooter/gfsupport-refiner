@@ -3,14 +3,13 @@ const formidable = require('formidable');
 const mammoth = require('mammoth');
 const OpenAI = require('openai');
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 function parseForm(req) {
   const form = formidable({
     maxFileSize: 25 * 1024 * 1024,
     multiples: false,
     keepExtensions: true
   });
+
   return new Promise((resolve, reject) => {
     form.parse(req, (err, fields, files) => {
       if (err) reject(err);
@@ -53,15 +52,23 @@ async function docxToHtml(buffer) {
 }
 
 function txtToHtml(text) {
-  return `<p>${text.trim().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br>')}</p>`;
+  return `<p>${text
+    .trim()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br>')}</p>`;
 }
 
 async function fileToHtml(file) {
   const filename = (file.originalFilename || '').toLowerCase();
   const buffer = await fs.readFile(file.filepath);
+
   if (filename.endsWith('.docx')) return await docxToHtml(buffer);
   if (filename.endsWith('.html') || filename.endsWith('.htm')) return buffer.toString('utf8').trim();
   if (filename.endsWith('.txt')) return txtToHtml(buffer.toString('utf8'));
+
   throw new Error('Unsupported file type. Please upload .docx, .html, .htm, or .txt files.');
 }
 
@@ -77,7 +84,9 @@ function protectImages(html) {
 
 function restoreImages(html, images) {
   let restored = html;
-  for (const img of images) restored = restored.split(img.key).join(img.tag);
+  for (const img of images) {
+    restored = restored.split(img.key).join(img.tag);
+  }
   return restored;
 }
 
@@ -91,29 +100,26 @@ function cleanModelOutput(text = '') {
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    res.status(500).json({ error: 'OPENAI_API_KEY is missing on the server.' });
-    return;
-  }
-
-  const expectedCode = process.env.ACCESS_CODE;
-  const providedCode = req.headers['x-access-code'];
-  if (expectedCode && providedCode !== expectedCode) {
-    res.status(401).json({ error: 'Invalid access code.' });
-    return;
+    return res.status(500).json({ error: 'OPENAI_API_KEY is missing on the server.' });
   }
 
   try {
     const { fields, files } = await parseForm(req);
+
+    const accessCode = getField(fields, 'accessCode', '');
+    if (accessCode !== process.env.ACCESS_CODE) {
+      return res.status(401).json({ error: 'Invalid access code.' });
+    }
+
     const guidelineFile = getFile(files, 'guideline');
     const documentFile = getFile(files, 'document');
+
     if (!guidelineFile || !documentFile) {
-      res.status(400).json({ error: 'Please upload both a guideline and a document.' });
-      return;
+      return res.status(400).json({ error: 'Please upload both a guideline and a document.' });
     }
 
     const model = getField(fields, 'model', 'gpt-4o-mini');
@@ -121,21 +127,54 @@ module.exports = async function handler(req, res) {
 
     const guidelineHtml = await fileToHtml(guidelineFile);
     const documentHtml = await fileToHtml(documentFile);
+
     const { htmlWithoutImages, images } = protectImages(documentHtml);
     const imagePlaceholders = images.map((img) => img.key).join(', ') || 'None';
 
     const creativityInstruction = {
-      strict: 'Make only necessary edits. Preserve the original structure, headings, bullets, tables, and sequence as much as possible.',
-      balanced: 'Improve clarity, grammar, formatting, and readability while preserving the original intent and structure.',
-      creative: 'Rewrite more actively for clarity and quality, but do not invent facts or remove important details.'
+      strict:
+        'Make only necessary edits. Preserve the original structure, headings, bullets, tables, and sequence as much as possible.',
+      balanced:
+        'Improve clarity, grammar, formatting, and readability while preserving the original intent and structure.',
+      creative:
+        'Rewrite more actively for clarity and quality, but do not invent facts or remove important details.'
     }[mode] || 'Improve clarity, grammar, formatting, and readability while preserving the original intent and structure.';
 
-    const prompt = `You are GoFreight's internal AI Refiner.\n\nYour task:\nProofread and refine the uploaded document based on the uploaded guideline.\n\nGuideline content:\n${stripHtml(guidelineHtml)}\n\nProcessing mode:\n${creativityInstruction}\n\nDocument HTML to refine:\n${htmlWithoutImages}\n\nImage placeholders that must be preserved exactly where relevant:\n${imagePlaceholders}\n\nRules:\n1. Output valid HTML only. Do not include markdown fences.\n2. Preserve useful headings, ordered lists, unordered lists, tables, screenshots/images, and procedural steps.\n3. Keep every image placeholder exactly as written, such as [[GOFREIGHT_IMAGE_1]]. Do not rename, remove, or wrap placeholders in code tags.\n4. Do not invent product behavior, policies, numbers, links, or screenshots.\n5. Improve grammar, clarity, consistency, and structure based on the guideline.\n6. Make the result easy to copy into HubSpot's editor.`;
+    const prompt = `You are GoFreight's internal AI Refiner.
+
+Your task:
+Proofread and refine the uploaded document based on the uploaded guideline.
+
+Guideline content:
+${stripHtml(guidelineHtml)}
+
+Processing mode:
+${creativityInstruction}
+
+Document HTML to refine:
+${htmlWithoutImages}
+
+Image placeholders that must be preserved exactly where relevant:
+${imagePlaceholders}
+
+Rules:
+1. Output valid HTML only. Do not include markdown fences.
+2. Preserve useful headings, ordered lists, unordered lists, tables, screenshots/images, and procedural steps.
+3. Keep every image placeholder exactly as written, such as [[GOFREIGHT_IMAGE_1]]. Do not rename, remove, or wrap placeholders in code tags.
+4. Do not invent product behavior, policies, numbers, links, or screenshots.
+5. Improve grammar, clarity, consistency, and structure based on the guideline.
+6. Make the result easy to copy into HubSpot's editor.`;
+
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const completion = await client.chat.completions.create({
       model,
       messages: [
-        { role: 'system', content: 'You refine internal and customer-facing business documents into clean, accurate, well-structured HTML.' },
+        {
+          role: 'system',
+          content:
+            'You refine internal and customer-facing business documents into clean, accurate, well-structured HTML.'
+        },
         { role: 'user', content: prompt }
       ],
       temperature: mode === 'creative' ? 0.5 : mode === 'strict' ? 0.1 : 0.25
@@ -143,11 +182,15 @@ module.exports = async function handler(req, res) {
 
     const refined = cleanModelOutput(completion.choices?.[0]?.message?.content || '');
     const restored = restoreImages(refined, images);
-    res.status(200).json({ html: restored, imagesPreserved: images.length });
+
+    return res.status(200).json({
+      html: restored,
+      imagesPreserved: images.length
+    });
   } catch (error) {
     console.error(error);
     const message = error?.response?.data?.error?.message || error?.message || 'Unknown error';
-    res.status(500).json({ error: message });
+    return res.status(500).json({ error: message });
   }
 };
 
