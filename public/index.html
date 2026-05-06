@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GoFreight Support Universal AI Refiner</title>
+  <style>
+    :root { color-scheme: light; --blue:#2563eb; --slate:#0f172a; --muted:#64748b; --border:#e5e7eb; --bg:#f6f7f9; }
+    * { box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; background:var(--bg); margin:0; color:var(--slate); }
+    main { max-width:1180px; margin:32px auto; padding:0 20px; }
+    h1 { margin:0 0 10px; font-size:34px; letter-spacing:-0.02em; }
+    .subtitle { color:#475569; margin:0 0 22px; font-size:16px; line-height:1.5; max-width:920px; }
+    .card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+    label { display:block; font-weight:700; margin:12px 0 6px; }
+    input, select, button { font-size:15px; }
+    input[type=file], input[type=password], select { width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; background:#fff; }
+    button { background:var(--blue); color:#fff; border:0; padding:12px 18px; border-radius:9px; cursor:pointer; font-weight:700; }
+    button.secondary { background:#6b7280; }
+    button.success { background:#059669; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    #status { color:#b45309; margin-left:12px; }
+    #preview { min-height:300px; background:#fff; border:1px solid var(--border); border-radius:14px; padding:28px; line-height:1.55; overflow:auto; }
+    #preview img { max-width:100%; height:auto; display:block; margin:12px 0; border:1px solid var(--border); border-radius:6px; }
+    #preview table { border-collapse:collapse; width:100%; margin:12px 0; }
+    #preview th, #preview td { border:1px solid #d1d5db; padding:8px; vertical-align:top; }
+    #preview ul, #preview ol { padding-left:28px; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:18px; }
+    .hint { color:var(--muted); font-size:13px; margin-top:8px; line-height:1.45; }
+    .hidden { display:none !important; }
+    .lock { max-width:520px; margin:86px auto; }
+    .badge { display:inline-flex; align-items:center; gap:6px; background:#e0f2fe; color:#075985; border:1px solid #bae6fd; padding:5px 9px; border-radius:999px; font-size:13px; font-weight:700; margin-bottom:14px; }
+    .topbar { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    .small { font-size:13px; color:var(--muted); }
+  </style>
+</head>
+<body>
+<main>
+  <section id="lock" class="card lock">
+    <span class="badge">Internal Tool</span>
+    <h1>GoFreight Support Refiner</h1>
+    <p class="subtitle">Enter the access code to use the internal universal refiner.</p>
+    <label>Access Code</label>
+    <input id="accessCode" type="password" autocomplete="current-password" placeholder="Enter access code" />
+    <div class="actions">
+      <button id="unlockBtn" type="button">Enter Workspace</button>
+      <span id="lockStatus" class="small"></span>
+    </div>
+  </section>
+
+  <section id="workspace" class="hidden">
+    <div class="topbar">
+      <div>
+        <h1>Universal AI Refiner – GoFreight Support</h1>
+        <p class="subtitle">Upload a guideline and any document. The tool will proofread and refine the document based on the guideline while preserving layout, bullets, tables, and images where possible.</p>
+      </div>
+      <button id="changeCode" class="secondary" type="button">Change Access Code</button>
+    </div>
+
+    <form id="form" class="card">
+      <div class="row">
+        <div>
+          <label>Upload Guideline (.docx, .html, .txt)</label>
+          <input type="file" name="guideline" accept=".docx,.html,.htm,.txt" required />
+          <div class="hint">Example: KB guideline, PR standard, customer-facing tone rules, SOP format, or any review criteria.</div>
+        </div>
+        <div>
+          <label>Upload Document to Refine (.docx, .html, .txt)</label>
+          <input type="file" name="document" accept=".docx,.html,.htm,.txt" required />
+          <div class="hint">Can be an article, SOP, customer email, internal announcement, process note, or other document.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>LLM Model</label>
+          <select name="model">
+            <option value="gpt-4o-mini">gpt-4o-mini</option>
+            <option value="gpt-4o">gpt-4o</option>
+          </select>
+        </div>
+        <div>
+          <label>Processing Option</label>
+          <select name="mode">
+            <option value="strict">Strict / Preserve layout</option>
+            <option value="balanced" selected>Balanced</option>
+            <option value="creative">More rewrite</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="processBtn" type="submit">Process Refine</button>
+        <span id="status"></span>
+      </div>
+      <div class="hint">The OpenAI API key stays on the server. Users only need the access code.</div>
+    </form>
+
+    <div class="card">
+      <h2>Preview</h2>
+      <div id="preview"><p class="hint">Refined output will appear here.</p></div>
+      <div class="actions">
+        <button class="success" id="copyRich" type="button">Copy Rich Content</button>
+        <button class="secondary" id="downloadHtml" type="button">Download HTML</button>
+        <span id="copyStatus" class="small"></span>
+      </div>
+      <div class="hint">For HubSpot: use Copy Rich Content, then paste into the HubSpot editor. Images are preserved as embedded images where supported.</div>
+    </div>
+  </section>
+</main>
+
+<script>
+  const lock = document.getElementById('lock');
+  const workspace = document.getElementById('workspace');
+  const accessCodeInput = document.getElementById('accessCode');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const lockStatus = document.getElementById('lockStatus');
+  const changeCode = document.getElementById('changeCode');
+  const form = document.getElementById('form');
+  const status = document.getElementById('status');
+  const preview = document.getElementById('preview');
+  const copyStatus = document.getElementById('copyStatus');
+  let lastHtml = '';
+
+  function getAccessCode() { return sessionStorage.getItem('gfsupport_refiner_access_code') || ''; }
+  function setAccessCode(value) { sessionStorage.setItem('gfsupport_refiner_access_code', value); }
+  function showWorkspace() { lock.classList.add('hidden'); workspace.classList.remove('hidden'); }
+  function showLock() { workspace.classList.add('hidden'); lock.classList.remove('hidden'); accessCodeInput.focus(); }
+
+  if (getAccessCode()) showWorkspace(); else showLock();
+
+  unlockBtn.addEventListener('click', () => {
+    const value = accessCodeInput.value.trim();
+    if (!value) { lockStatus.textContent = 'Please enter the access code.'; return; }
+    setAccessCode(value);
+    showWorkspace();
+  });
+
+  accessCodeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlockBtn.click(); });
+
+  changeCode.addEventListener('click', () => {
+    sessionStorage.removeItem('gfsupport_refiner_access_code');
+    showLock();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    status.textContent = 'Processing...';
+    copyStatus.textContent = '';
+    lastHtml = '';
+    const fd = new FormData(form);
+    try {
+      const res = await fetch('/api/refine', {
+        method: 'POST',
+        headers: { 'x-access-code': getAccessCode() },
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      lastHtml = data.html;
+      preview.innerHTML = lastHtml;
+      status.textContent = `Done. ${data.imagesPreserved || 0} image(s) preserved.`;
+    } catch (err) {
+      status.textContent = '';
+      preview.innerHTML = `<p style="color:#b91c1c;"><b>Error:</b> ${err.message}</p>`;
+      if (err.message === 'Invalid access code.') {
+        sessionStorage.removeItem('gfsupport_refiner_access_code');
+        lockStatus.textContent = 'Invalid access code. Please try again.';
+        showLock();
+      }
+    }
+  });
+
+  document.getElementById('copyRich').addEventListener('click', async () => {
+    if (!lastHtml) { copyStatus.textContent = 'Nothing to copy yet.'; return; }
+    try {
+      const blobHtml = new Blob([lastHtml], { type: 'text/html' });
+      const blobText = new Blob([preview.innerText], { type: 'text/plain' });
+      await navigator.clipboard.write([new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })]);
+      copyStatus.textContent = 'Copied. Paste into HubSpot editor.';
+    } catch (err) {
+      const range = document.createRange();
+      range.selectNodeContents(preview);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      copyStatus.textContent = 'Copy API blocked. Content selected; press Ctrl+C.';
+    }
+  });
+
+  document.getElementById('downloadHtml').addEventListener('click', () => {
+    if (!lastHtml) { copyStatus.textContent = 'Nothing to download yet.'; return; }
+    const full = `<!doctype html><html><head><meta charset="utf-8"><title>Refined Document</title></head><body>${lastHtml}</body></html>`;
+    const url = URL.createObjectURL(new Blob([full], { type: 'text/html' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'refined-document.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+</script>
+</body>
+</html>

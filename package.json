@@ -1,0 +1,19 @@
+{
+  "name": "gfsupport-refiner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GoFreight Support Universal AI Refiner - Vercel internal web tool",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "@vercel/node": "latest",
+    "formidable": "^3.5.2",
+    "mammoth": "^1.8.0",
+    "openai": "^4.78.1"
+  },
+  "devDependencies": {
+    "vercel": "latest"
+  }
+}
