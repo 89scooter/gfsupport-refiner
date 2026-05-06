@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GoFreight Support Refiner Login</title>
+
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      background:#f3f4f6;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+      margin:0;
+    }
+
+    .card{
+      background:white;
+      padding:40px;
+      border-radius:12px;
+      width:360px;
+      box-shadow:0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    h1{
+      font-size:24px;
+      margin-bottom:12px;
+    }
+
+    p{
+      color:#555;
+      margin-bottom:20px;
+    }
+
+    input{
+      width:100%;
+      padding:12px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      margin-bottom:16px;
+      font-size:16px;
+      box-sizing:border-box;
+    }
+
+    button{
+      width:100%;
+      padding:12px;
+      background:#2563eb;
+      color:white;
+      border:none;
+      border-radius:8px;
+      font-size:16px;
+      cursor:pointer;
+    }
+
+    button:hover{
+      background:#1d4ed8;
+    }
+
+    .error{
+      color:red;
+      margin-top:12px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>GoFreight Support Refiner</h1>
+
+  <p>Enter the access code to continue.</p>
+
+  <input type="password" id="code" placeholder="Access code"/>
+
+  <button onclick="login()">Enter Workspace</button>
+
+  <div class="error" id="error"></div>
+</div>
+
+<script>
+async function login() {
+  const code = document.getElementById('code').value;
+
+  const res = await fetch('/api/auth', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({ accessCode: code })
+  });
+
+  if(res.ok){
+    window.location.href='/';
+  }else{
+    document.getElementById('error').innerText='Invalid access code';
+  }
+}
+</script>
+
+</body>
+</html>
