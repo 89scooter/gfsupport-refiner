@@ -77,9 +77,17 @@
 
     <div class="actions">
       <button id="processBtn" type="submit">Process Refine</button>
+      <button id="textOnlyBtn" class="secondary" type="button">Process Text-only Refine</button>
       <span id="status"></span>
     </div>
-    <div class="hint">The OpenAI API key stays on the server. Users only need the access code to enter the workspace.</div>
+
+    <div class="hint">
+      If the article is too large or contains many images, use Text-only Refine to avoid timeout.
+    </div>
+
+    <div class="hint">
+      The OpenAI API key stays on the server. Users only need the access code to enter the workspace.
+    </div>
   </form>
 
   <div class="card">
@@ -101,15 +109,18 @@
   const preview = document.getElementById('preview');
   const copyStatus = document.getElementById('copyStatus');
   const logoutBtn = document.getElementById('logoutBtn');
+
   let lastHtml = '';
 
   async function checkSession() {
     try {
       const res = await fetch('/api/session-check', { method: 'GET' });
+
       if (!res.ok) {
         window.location.href = '/login.html';
         return;
       }
+
       app.classList.remove('hidden');
     } catch (err) {
       window.location.href = '/login.html';
@@ -123,13 +134,16 @@
     window.location.href = '/login.html';
   });
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  async function processRefine(textOnly = false) {
     status.textContent = 'Processing...';
     copyStatus.textContent = '';
     lastHtml = '';
 
     const fd = new FormData(form);
+
+    if (textOnly) {
+      fd.append('refineType', 'text-only');
+    }
 
     try {
       const res = await fetch('/api/refine', {
@@ -137,22 +151,52 @@
         body: fd
       });
 
-      const data = await res.json();
+      const rawText = await res.text();
+
+      let data;
+
+      try {
+        data = JSON.parse(rawText);
+      } catch (err) {
+        throw new Error(
+          'Server timeout or invalid response. Please try Text-only Refine for large articles.'
+        );
+      }
 
       if (res.status === 401) {
         window.location.href = '/login.html';
         return;
       }
 
-      if (!res.ok) throw new Error(data.error || 'Request failed');
+      if (!res.ok) {
+        throw new Error(
+          data.error ||
+          data.timeoutHint ||
+          'Request failed'
+        );
+      }
 
       lastHtml = data.html;
+
       preview.innerHTML = lastHtml;
-      status.textContent = `Done. ${data.imagesPreserved || 0} image(s) preserved.`;
+
+      status.textContent =
+        `Done. ${data.imagesPreserved || 0} image(s) preserved.`;
     } catch (err) {
       status.textContent = '';
-      preview.innerHTML = `<p style="color:#b91c1c;"><b>Error:</b> ${err.message}</p>`;
+
+      preview.innerHTML =
+        `<p style="color:#b91c1c;"><b>Error:</b> ${err.message}</p>`;
     }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    processRefine(false);
+  });
+
+  document.getElementById('textOnlyBtn').addEventListener('click', async () => {
+    processRefine(true);
   });
 
   document.getElementById('copyRich').addEventListener('click', async () => {
@@ -175,13 +219,16 @@
       copyStatus.textContent = 'Copied. Paste into HubSpot editor.';
     } catch (err) {
       const range = document.createRange();
+
       range.selectNodeContents(preview);
 
       const sel = window.getSelection();
+
       sel.removeAllRanges();
       sel.addRange(range);
 
-      copyStatus.textContent = 'Copy API blocked. Content selected; press Ctrl+C.';
+      copyStatus.textContent =
+        'Copy API blocked. Content selected; press Ctrl+C.';
     }
   });
 
@@ -191,14 +238,21 @@
       return;
     }
 
-    const full = `<!doctype html><html><head><meta charset="utf-8"><title>Refined Document</title></head><body>${lastHtml}</body></html>`;
-    const url = URL.createObjectURL(new Blob([full], { type: 'text/html' }));
+    const full =
+      `<!doctype html><html><head><meta charset="utf-8"><title>Refined Document</title></head><body>${lastHtml}</body></html>`;
+
+    const url =
+      URL.createObjectURL(
+        new Blob([full], { type: 'text/html' })
+      );
 
     const a = document.createElement('a');
+
     a.href = url;
     a.download = 'refined-document.html';
 
     document.body.appendChild(a);
+
     a.click();
     a.remove();
 
