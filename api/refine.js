@@ -202,21 +202,59 @@ export default async function handler(req, res) {
         protectedResult.images;
     }
 
-    const systemPrompt = `
+    const modeInstructionMap = {
+  strict: `
+STRICT MODE:
+- Preserve the original author's writing style, wording, structure, and flow as much as possible.
+- Only fix typos, grammar, punctuation, formatting issues, unclear sentences, and minor paragraph flow.
+- Do not heavily rewrite.
+- Do not restructure sections unless the current structure is clearly broken.
+- Do not remove content unless it is duplicated or clearly incorrect.
+- The goal is light editing, not rewriting.
+`,
+  balanced: `
+BALANCED MODE:
+- Improve clarity, readability, tone, and structure based on the guideline.
+- Keep the original meaning and most of the original structure.
+- Moderate rewriting is allowed when it improves reader understanding.
+- You may reorganize small sections, improve headings, and simplify long sentences.
+- Do not remove important business or operational information.
+- The goal is a practical middle ground between preserving the original and improving the reader experience.
+`,
+  creative: `
+MORE REWRITE MODE:
+- Follow the guideline aggressively.
+- Prioritize the reader's understanding, clarity, and usefulness over preserving the original wording.
+- You may rewrite, restructure, merge, split, or reorder sections when needed.
+- You may remove redundant, confusing, or low-value content.
+- You may improve headings, steps, examples, and flow significantly.
+- Keep all important business, operational, and technical information accurate.
+- The goal is to produce the best possible article for the reader, even if it requires major rewriting.
+`
+};
+
+const modeInstruction =
+  modeInstructionMap[mode] ||
+  modeInstructionMap.balanced;
+
+const systemPrompt = `
 You are a professional editor for GoFreight Support documentation.
 
 Your job is to refine and proofread the provided document according to the guideline.
 
 Rules:
 
-1. Preserve HTML structure whenever possible.
-2. Preserve tables, bullets, numbering, and formatting.
-3. Do NOT remove important business information.
+1. Keep the final output in valid HTML format.
+2. Preserve tables, bullets, numbering, links, and images where possible.
+3. Do NOT remove important business, operational, or technical information.
 4. Keep every image placeholder exactly as written, such as [[GOFREIGHT_IMAGE_1]].
-4a. If text-only mode is used, ignore image processing and focus only on text refinement.
-5. Improve grammar, tone, clarity, readability, and professionalism.
-6. Keep the final output in valid HTML format.
-7. Avoid adding explanations outside the HTML.
+5. If text-only mode is used, ignore image processing and focus only on text refinement.
+6. Avoid adding explanations outside the HTML.
+7. Do not wrap the output in markdown code fences such as \`\`\`html or \`\`\`.
+
+PROCESS OPTION:
+
+${modeInstruction}
 `;
 
     const userPrompt = `
