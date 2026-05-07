@@ -1,224 +1,289 @@
-const fs = require('fs/promises');
-const { formidable } = require('formidable');
-const mammoth = require('mammoth');
-const OpenAI = require('openai');
+import OpenAI from 'openai';
+import formidable from 'formidable';
+import mammoth from 'mammoth';
+import fs from 'fs/promises';
 
-function parseForm(req) {
-  const form = formidable({
-    maxFileSize: 25 * 1024 * 1024,
-    multiples: false,
-    keepExtensions: true
-  });
+export const config = {
+  api: {
+    bodyParser: false
+  },
+  maxDuration: 60
+};
 
-  return new Promise((resolve, reject) => {
-    form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
-    });
-  });
-}
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
-function getField(fields, name, fallback = '') {
-  const value = fields[name];
-  if (Array.isArray(value)) return value[0] ?? fallback;
-  return value ?? fallback;
-}
+function getField(fields, key, defaultValue = '') {
+  const value = fields[key];
 
-function getFile(files, name) {
-  const value = files[name];
-  return Array.isArray(value) ? value[0] : value;
-}
+  if (Array.isArray(value)) {
+    return value[0];
+  }
 
-function stripHtml(html = '') {
-  return html
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-async function docxToHtml(buffer) {
-  const result = await mammoth.convertToHtml(
-    { buffer },
-    {
-      convertImage: mammoth.images.imgElement(async (image) => {
-        const base64 = await image.read('base64');
-        return {
-          src: `data:${image.contentType};base64,${base64}`
-        };
-      })
-    }
-  );
-
-  return result.value.trim();
-}
-
-function txtToHtml(text) {
-  return `<p>${text
-    .trim()
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/\n/g, '<br>')}</p>`;
-}
-
-async function fileToHtml(file) {
-  const filename = (file.originalFilename || '').toLowerCase();
-  const buffer = await fs.readFile(file.filepath);
-
-  if (filename.endsWith('.docx')) return await docxToHtml(buffer);
-  if (filename.endsWith('.html') || filename.endsWith('.htm')) return buffer.toString('utf8').trim();
-  if (filename.endsWith('.txt')) return txtToHtml(buffer.toString('utf8'));
-
-  throw new Error('Unsupported file type. Please upload .docx, .html, .htm, or .txt files.');
+  return value || defaultValue;
 }
 
 function protectImages(html) {
   const images = [];
 
-  const htmlWithoutImages = html.replace(/<img\b[^>]*>/gi, (tag) => {
-    const key = `[[GOFREIGHT_IMAGE_${images.length + 1}]]`;
-    images.push({ key, tag });
-    return key;
-  });
+  const htmlWithoutImages = html.replace(
+    /<img\b[^>]*>/gi,
+    (match) => {
+      const placeholder =
+        `[[GOFREIGHT_IMAGE_${images.length + 1}]]`;
 
-  return { htmlWithoutImages, images };
+      images.push({
+        placeholder,
+        original: match
+      });
+
+      return placeholder;
+    }
+  );
+
+  return {
+    htmlWithoutImages,
+    images
+  };
 }
 
 function restoreImages(html, images) {
   let restored = html;
 
-  for (const img of images) {
-    restored = restored.split(img.key).join(img.tag);
+  for (const image of images) {
+    restored =
+      restored.replaceAll(
+        image.placeholder,
+        image.original
+      );
   }
 
   return restored;
 }
 
-function cleanModelOutput(text = '') {
-  return text
-    .replace(/^```html\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```$/i, '')
-    .trim();
+async function readFileContent(file) {
+  if (!file) {
+    return '';
+  }
+
+  const filepath =
+    file.filepath || file.path;
+
+  const buffer = await fs.readFile(filepath);
+
+  const filename =
+    file.originalFilename || '';
+
+  if (
+    filename.endsWith('.html') ||
+    filename.endsWith('.htm')
+  ) {
+    return buffer.toString('utf8');
+  }
+
+  if (filename.endsWith('.txt')) {
+    return buffer.toString('utf8');
+  }
+
+  if (filename.endsWith('.docx')) {
+    const result =
+      await mammoth.convertToHtml({
+        buffer
+      });
+
+    return result.value;
+  }
+
+  return buffer.toString('utf8');
 }
 
-function hasValidSession(req) {
-  const cookie = req.headers.cookie || '';
-  return cookie.includes('gf_refiner_auth=true');
-}
-
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  if (!hasValidSession(req)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  if (!process.env.OPENAI_API_KEY) {
-    return res.status(500).json({ error: 'OPENAI_API_KEY is missing on the server.' });
+    return res
+      .status(405)
+      .json({
+        error: 'Method not allowed'
+      });
   }
 
   try {
-    const { fields, files } = await parseForm(req);
+    const form =
+      formidable({
+        multiples: false
+      });
 
-    const guidelineFile = getFile(files, 'guideline');
-    const documentFile = getFile(files, 'document');
+    const {
+      fields,
+      files
+    } = await new Promise(
+      (resolve, reject) => {
+        form.parse(
+          req,
+          (err, fields, files) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve({
+                fields,
+                files
+              });
+            }
+          }
+        );
+      }
+    );
 
-    if (!guidelineFile || !documentFile) {
-      return res.status(400).json({ error: 'Please upload both a guideline and a document.' });
+    const guidelineFile =
+      Array.isArray(files.guideline)
+        ? files.guideline[0]
+        : files.guideline;
+
+    const documentFile =
+      Array.isArray(files.document)
+        ? files.document[0]
+        : files.document;
+
+    const model =
+      getField(
+        fields,
+        'model',
+        'gpt-4o-mini'
+      );
+
+    const mode =
+      getField(
+        fields,
+        'mode',
+        'balanced'
+      );
+
+    const refineType =
+      getField(
+        fields,
+        'refineType',
+        'normal'
+      );
+
+    const guideline =
+      await readFileContent(
+        guidelineFile
+      );
+
+    const documentHtml =
+      await readFileContent(
+        documentFile
+      );
+
+    let htmlWithoutImages;
+    let images = [];
+
+    if (refineType === 'text-only') {
+      htmlWithoutImages =
+        documentHtml
+          .replace(
+            /<img\b[^>]*>/gi,
+            '[IMAGE_REMOVED_FOR_TEXT_ONLY_MODE]'
+          )
+          .replace(
+            /data:image\/[^;]+;base64,[^"]+/gi,
+            '[BASE64_REMOVED]'
+          );
+    } else {
+      const protectedResult =
+        protectImages(
+          documentHtml
+        );
+
+      htmlWithoutImages =
+        protectedResult.htmlWithoutImages;
+
+      images =
+        protectedResult.images;
     }
 
-    const model = getField(fields, 'model', 'gpt-4o-mini');
-    const mode = getField(fields, 'mode', 'balanced');
+    const systemPrompt = `
+You are a professional editor for GoFreight Support documentation.
 
-    const guidelineHtml = await fileToHtml(guidelineFile);
-    const documentHtml = await fileToHtml(documentFile);
-
-    const { htmlWithoutImages, images } = protectImages(documentHtml);
-    const imagePlaceholders = images.map((img) => img.key).join(', ') || 'None';
-
-    const creativityInstruction = {
-      strict: 'Make only necessary edits. Preserve the original structure, headings, bullets, tables, and sequence as much as possible.',
-      balanced: 'Improve clarity, grammar, formatting, and readability while preserving the original intent and structure.',
-      creative: 'Rewrite more actively for clarity and quality, but do not invent facts or remove important details.'
-    }[mode] || 'Improve clarity, grammar, formatting, and readability while preserving the original intent and structure.';
-
-    const prompt = `
-You are GoFreight's internal Universal AI Refiner.
-
-Your task:
-Proofread and refine the uploaded document based on the uploaded guideline.
-
-Guideline content:
-${stripHtml(guidelineHtml)}
-
-Processing mode:
-${creativityInstruction}
-
-Document HTML to refine:
-${htmlWithoutImages}
-
-Image placeholders that must be preserved exactly where relevant:
-${imagePlaceholders}
+Your job is to refine and proofread the provided document according to the guideline.
 
 Rules:
-1. Output valid HTML only.
-2. Do not include markdown fences.
-3. Preserve headings, bullets, tables, screenshots/images, spacing, and procedural steps whenever possible.
+
+1. Preserve HTML structure whenever possible.
+2. Preserve tables, bullets, numbering, and formatting.
+3. Do NOT remove important business information.
 4. Keep every image placeholder exactly as written, such as [[GOFREIGHT_IMAGE_1]].
-5. Do not rename, remove, or wrap image placeholders in code tags.
-6. Do not invent facts, product behavior, links, policies, or screenshots.
-7. Improve grammar, clarity, readability, formatting, and consistency based on the uploaded guideline.
-8. Keep the output easy to copy into HubSpot or other rich text editors.
+4a. If text-only mode is used, ignore image processing and focus only on text refinement.
+5. Improve grammar, tone, clarity, readability, and professionalism.
+6. Keep the final output in valid HTML format.
+7. Avoid adding explanations outside the HTML.
 `;
 
-    const client = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+    const userPrompt = `
+=== GUIDELINE ===
 
-    const completion = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: 'You refine business documents into clean, professional, structured HTML while preserving formatting and images.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: mode === 'creative' ? 0.5 : mode === 'strict' ? 0.1 : 0.25
-    });
+${guideline}
 
-    const refined = cleanModelOutput(completion.choices?.[0]?.message?.content || '');
-    const restored = restoreImages(refined, images);
+=== DOCUMENT ===
+
+${htmlWithoutImages}
+
+=== MODE ===
+
+${mode}
+`;
+
+    const completion =
+      await client.chat.completions.create({
+        model,
+        temperature:
+          mode === 'strict'
+            ? 0.1
+            : mode === 'creative'
+            ? 0.8
+            : 0.4,
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ]
+      });
+
+    const refined =
+      completion.choices?.[0]
+        ?.message?.content ||
+      '<p>No response.</p>';
+
+    const restored =
+      refineType === 'text-only'
+        ? refined
+        : restoreImages(
+            refined,
+            images
+          );
 
     return res.status(200).json({
       html: restored,
-      imagesPreserved: images.length
+      imagesPreserved:
+        images.length,
+      refineType
     });
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
 
     const message =
-      error?.response?.data?.error?.message ||
-      error?.message ||
-      'Unknown error';
+      err?.message ||
+      'Unexpected server error';
 
     return res.status(500).json({
-      error: message
+      error: message,
+      timeoutHint:
+        'If the article is large or contains many images, please try Text-only Refine.'
     });
   }
-};
-
-module.exports.config = {
-  api: {
-    bodyParser: false
-  }
-};
+}
