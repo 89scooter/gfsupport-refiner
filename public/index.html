@@ -22,8 +22,13 @@
 }
 
 button.success {
-  background:#34d399;
+  background:#059669;
   color:#fff;
+}
+
+button.download {
+  background:#6ee7b7;
+  color:#065f46;
 }
     button:disabled { opacity:.55; cursor:not-allowed; }
     .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
@@ -100,7 +105,7 @@ button.success {
     <div id="preview"><p class="hint">Refined output will appear here.</p></div>
     <div class="actions">
       <button class="success" id="copyRich" type="button">Copy Rich Content</button>
-      <button class="secondary" id="downloadHtml" type="button">Download HTML</button>
+      <button class="download" id="downloadHtml" type="button">Download HTML</button>
       <span id="copyStatus" class="small"></span>
     </div>
     <div class="hint">
