@@ -1,5 +1,5 @@
 const fs = require('fs/promises');
-const formidable = require('formidable');
+const { formidable } = require('formidable');
 const mammoth = require('mammoth');
 const OpenAI = require('openai');
 
