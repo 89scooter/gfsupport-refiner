@@ -254,10 +254,16 @@ ${mode}
         ]
       });
 
-    const refined =
-      completion.choices?.[0]
-        ?.message?.content ||
-      '<p>No response.</p>';
+    let refined =
+  completion.choices?.[0]
+    ?.message?.content ||
+  '<p>No response.</p>';
+
+refined = refined
+  .replace(/^```html\s*/i, '')
+  .replace(/^```\s*/i, '')
+  .replace(/\s*```$/i, '')
+  .trim();
 
     const restored =
       refineType === 'text-only'
