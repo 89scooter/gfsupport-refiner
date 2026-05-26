@@ -389,17 +389,21 @@
 
           const partialHtml = restoreImages(refinedChunks.join("\n\n"));
           latestHtml = partialHtml;
-          preview.innerHTML = partialHtml;
+          preview.innerHTML =
+  '<div style="margin-bottom:16px;color:#64748b;font-weight:bold;">Partial Preview — processing is still running...</div>' +
+  partialHtml;
         }
 
         latestHtml = restoreImages(refinedChunks.join("\n\n"));
-        preview.innerHTML = latestHtml;
+        preview.innerHTML =
+  '<div style="margin-bottom:16px;color:#16a34a;font-weight:bold;">Completed — refined document is ready.</div>' +
+  latestHtml;
 
-        updateStatus(
-          `Done.\n` +
-          `Sections processed: ${chunks.length}\n` +
-          `Images preserved: ${imageMap.length}`
-        );
+updateStatus(
+  `Completed.\n` +
+  `Sections processed: ${chunks.length}/${chunks.length}\n` +
+  `Images preserved: ${imageMap.length}`
+);
       } catch (error) {
         preview.innerHTML = '<span class="error">Error: ' + error.message + '</span>';
         updateStatus(
