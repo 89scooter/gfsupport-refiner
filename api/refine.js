@@ -256,20 +256,22 @@ export default async function handler(req, res) {
 
     const chunks = splitHtmlIntoChunks(safeHtml, 9000);
 
+    const limitedChunks = chunks.slice(0, 2);
+    
     const refinedChunks = [];
 
-    for (let i = 0; i < chunks.length; i++) {
-      const refinedChunk = await refineChunk({
-        model,
-        mode,
-        guideline,
-        chunk: chunks[i],
-        index: i + 1,
-        total: chunks.length
-      });
+    for (let i = 0; i < limitedChunks.length; i++) {
+  const refinedChunk = await refineChunk({
+    model,
+    mode,
+    guideline,
+    chunk: limitedChunks[i],
+    index: i + 1,
+    total: limitedChunks.length
+  });
 
-      refinedChunks.push(refinedChunk);
-    }
+  refinedChunks.push(refinedChunk);
+}
 
     let refined = refinedChunks.join("\n\n");
     refined = restoreImages(refined, images);
@@ -277,7 +279,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       html: refined,
       imagesPreserved: images.length,
-      sectionsProcessed: chunks.length,
+      sectionsProcessed: limitedChunks.length,
+totalSectionsDetected: chunks.length,
       refineType: "long-document"
     });
   } catch (err) {
