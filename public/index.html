@@ -1,275 +1,313 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GoFreight Support Universal AI Refiner</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Universal AI Refiner – GoFreight Support</title>
   <style>
-    :root { color-scheme: light; --blue:#2563eb; --slate:#0f172a; --muted:#64748b; --border:#e5e7eb; --bg:#f6f7f9; }
-    * { box-sizing:border-box; }
-    body { font-family: Arial, sans-serif; background:var(--bg); margin:0; color:var(--slate); }
-    main { max-width:1180px; margin:32px auto; padding:0 20px; }
-    h1 { margin:0 0 10px; font-size:34px; letter-spacing:-0.02em; }
-    .subtitle { color:#475569; margin:0 0 22px; font-size:16px; line-height:1.5; max-width:920px; }
-    .card { background:#fff; border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
-    label { display:block; font-weight:700; margin:12px 0 6px; }
-    input, select, button { font-size:15px; }
-    input[type=file], select { width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; background:#fff; }
-    button { background:var(--blue); color:#fff; border:0; padding:12px 18px; border-radius:9px; cursor:pointer; font-weight:700; }
-    button.secondary {
-  background:#60a5fa;
-  color:#fff;
-}
-
-button.success {
-  background:#059669;
-  color:#fff;
-}
-
-button.download {
-  background:#6ee7b7;
-  color:#065f46;
-}
-    button:disabled { opacity:.55; cursor:not-allowed; }
-    .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    #status { color:#b45309; margin-left:12px; }
-    #preview { min-height:300px; background:#fff; border:1px solid var(--border); border-radius:14px; padding:28px; line-height:1.55; overflow:auto; }
-    #preview img { max-width:100%; height:auto; display:block; margin:12px 0; border:1px solid var(--border); border-radius:6px; }
-    #preview table { border-collapse:collapse; width:100%; margin:12px 0; }
-    #preview th, #preview td { border:1px solid #d1d5db; padding:8px; vertical-align:top; }
-    #preview ul, #preview ol { padding-left:28px; }
-    .actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:18px; }
-    .hint { color:var(--muted); font-size:13px; margin-top:8px; line-height:1.45; }
-    .hidden { display:none !important; }
-    .topbar { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
-    .small { font-size:13px; color:var(--muted); }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6f8fb;
+      color: #111827;
+      margin: 0;
+      padding: 32px;
+    }
+    h1 {
+      font-size: 42px;
+      margin: 0 0 16px;
+    }
+    p {
+      color: #334155;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+    }
+    .logout {
+      background: #60a5fa;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 24px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      padding: 28px;
+      margin-top: 28px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    label {
+      display: block;
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    input, select {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 18px;
+      box-sizing: border-box;
+      background: white;
+    }
+    .hint {
+      font-size: 16px;
+      color: #64748b;
+      margin-top: 10px;
+    }
+    .button-row {
+      margin-top: 24px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .primary {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 16px 26px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .secondary {
+      background: #60a5fa;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 16px 26px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #status {
+      font-size: 16px;
+      color: #475569;
+      margin-top: 14px;
+      white-space: pre-line;
+    }
+    .preview-box {
+      min-height: 260px;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 32px;
+      background: white;
+      overflow: auto;
+    }
+    .error {
+      color: #dc2626;
+      font-weight: bold;
+    }
+    .actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      h1 {
+        font-size: 32px;
+      }
+    }
   </style>
 </head>
 <body>
-<main id="app" class="hidden">
-  <div class="topbar">
+  <div class="top">
     <div>
       <h1>Universal AI Refiner – GoFreight Support</h1>
-      <p class="subtitle">Upload a guideline and any document. The tool will proofread and refine the document based on the guideline while preserving layout, bullets, tables, and images where possible.</p>
+      <p>
+        Upload a guideline and any document. The tool will proofread and refine the document based on the guideline while preserving layout, bullets, tables, and images where possible.
+      </p>
     </div>
-    <button id="logoutBtn" class="secondary" type="button">Logout</button>
+    <button class="logout" onclick="logout()">Logout</button>
   </div>
 
-  <form id="form" class="card">
-    <div class="row">
+  <div class="card">
+    <div class="grid">
       <div>
         <label>Upload Guideline (.docx, .html, .txt)</label>
-        <input type="file" name="guideline" accept=".docx,.html,.htm,.txt" required />
-        <div class="hint">Example: KB guideline, PR standard, customer-facing tone rules, SOP format, or any review criteria.</div>
+        <input id="guideline" type="file" accept=".docx,.html,.htm,.txt" />
+        <div class="hint">
+          Example: KB guideline, PR standard, customer-facing tone rules, SOP format, or any review criteria.
+        </div>
       </div>
+
       <div>
         <label>Upload Document to Refine (.docx, .html, .txt)</label>
-        <input type="file" name="document" accept=".docx,.html,.htm,.txt" required />
-        <div class="hint">Can be an article, SOP, customer email, internal announcement, process note, or other document.</div>
+        <input id="document" type="file" accept=".docx,.html,.htm,.txt" />
+        <div class="hint">
+          Can be an article, SOP, customer email, internal announcement, process note, or other document.
+        </div>
       </div>
-    </div>
 
-    <div class="row">
       <div>
         <label>LLM Model</label>
-        <select name="model">
+        <select id="model">
           <option value="gpt-4o-mini">gpt-4o-mini</option>
           <option value="gpt-4o">gpt-4o</option>
         </select>
       </div>
+
       <div>
-        <label>Processing Option</label>
-        <select name="mode">
-          <option value="strict">Strict / Preserve layout</option>
-          <option value="balanced" selected>Balanced</option>
-          <option value="creative">More rewrite</option>
+        <label>Refinement Level</label>
+        <select id="mode">
+          <option value="strict">Light proofread</option>
+          <option value="balanced">Balanced</option>
+          <option value="creative" selected>More rewrite</option>
         </select>
       </div>
     </div>
 
-    <div class="actions">
-      <button id="processBtn" type="submit">Process Refine</button>
-      <button id="textOnlyBtn" class="secondary" type="button">Process Text-only Refine</button>
-      <span id="status"></span>
+    <div class="button-row">
+      <button id="processBtn" class="primary" onclick="processRefine()">Refine Document</button>
     </div>
 
-   <div class="hint">
-  For large articles or image-heavy content, use Text-only Refine for faster and more stable processing.
-</div>
+    <div class="hint">
+      The system will automatically process the document in long-document mode for better stability.
+    </div>
 
-   
-  </form>
+    <div id="status"></div>
+  </div>
 
   <div class="card">
-    <h2>Preview</h2>
-    <div id="preview"><p class="hint">Refined output will appear here.</p></div>
-    <div class="actions">
-      <button class="success" id="copyRich" type="button">Copy Rich Content</button>
-      <button class="download" id="downloadHtml" type="button">Download HTML</button>
-      <span id="copyStatus" class="small"></span>
+    <h2 style="font-size: 32px;">Preview</h2>
+    <div id="preview" class="preview-box">
+      Refined output will appear here.
     </div>
+
+    <div class="actions">
+      <button class="secondary" onclick="copyRichContent()">Copy Rich Content</button>
+      <button class="secondary" onclick="downloadHtml()">Download HTML</button>
+    </div>
+
     <div class="hint">
-  Use Copy Rich Content when pasting into editors that support formatted content and images.
-</div>
+      Use Copy Rich Content when pasting into editors that support formatted content and images.
+    </div>
   </div>
-</main>
 
-<script>
-  const app = document.getElementById('app');
-  const form = document.getElementById('form');
-  const status = document.getElementById('status');
-  const preview = document.getElementById('preview');
-  const copyStatus = document.getElementById('copyStatus');
-  const logoutBtn = document.getElementById('logoutBtn');
+  <script>
+    let latestHtml = "";
 
-  let lastHtml = '';
+    function logout() {
+      sessionStorage.removeItem("gfsupport_refiner_logged_in");
+      localStorage.removeItem("gfsupport_refiner_logged_in");
+      window.location.href = "/login.html";
+    }
 
-  async function checkSession() {
-    try {
-      const res = await fetch('/api/session-check', { method: 'GET' });
+    async function processRefine() {
+      const guideline = document.getElementById("guideline").files[0];
+      const doc = document.getElementById("document").files[0];
+      const model = document.getElementById("model").value;
+      const mode = document.getElementById("mode").value;
+      const preview = document.getElementById("preview");
+      const status = document.getElementById("status");
+      const button = document.getElementById("processBtn");
 
-      if (!res.ok) {
-        window.location.href = '/login.html';
+      if (!guideline || !doc) {
+        preview.innerHTML = '<span class="error">Error: Please upload both guideline and document.</span>';
         return;
       }
 
-      app.classList.remove('hidden');
-    } catch (err) {
-      window.location.href = '/login.html';
-    }
-  }
+      const formData = new FormData();
+      formData.append("guideline", guideline);
+      formData.append("document", doc);
+      formData.append("model", model);
+      formData.append("mode", mode);
 
-  checkSession();
-
-  logoutBtn.addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login.html';
-  });
-
-  async function processRefine(textOnly = false) {
-    status.textContent = 'Processing...';
-    copyStatus.textContent = '';
-    lastHtml = '';
-
-    const fd = new FormData(form);
-
-    if (textOnly) {
-      fd.append('refineType', 'text-only');
-    }
-
-    try {
-      const res = await fetch('/api/refine', {
-        method: 'POST',
-        body: fd
-      });
-
-      const rawText = await res.text();
-
-      let data;
+      button.disabled = true;
+      latestHtml = "";
+      preview.innerHTML = "Processing...";
+      status.textContent =
+        "Reading files...\n" +
+        "Splitting document...\n" +
+        "Refining document section by section...\n" +
+        "This may take longer for large documents.";
 
       try {
-        data = JSON.parse(rawText);
-      } catch (err) {
-        throw new Error(
-          'Server timeout or invalid response. Please try Text-only Refine for large articles.'
-        );
+        const response = await fetch("/api/refine", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Server timeout or invalid response.");
+        }
+
+        latestHtml = data.html || "";
+        preview.innerHTML = latestHtml || "No refined content returned.";
+
+        status.textContent =
+          "Done.\n" +
+          `Sections processed: ${data.sectionsProcessed || 1}\n` +
+          `Images preserved: ${data.imagesPreserved || 0}`;
+      } catch (error) {
+        preview.innerHTML =
+          '<span class="error">Error: ' +
+          error.message +
+          '</span>';
+        status.textContent =
+          "Failed.\nIf this is a very large or image-heavy document, try reducing file size or splitting the article into smaller parts.";
+      } finally {
+        button.disabled = false;
       }
+    }
 
-      if (res.status === 401) {
-        window.location.href = '/login.html';
-        return;
+    async function copyRichContent() {
+      const preview = document.getElementById("preview");
+
+      try {
+        const blob = new Blob([preview.innerHTML], { type: "text/html" });
+        const item = new ClipboardItem({ "text/html": blob });
+        await navigator.clipboard.write([item]);
+        alert("Copied rich content.");
+      } catch (error) {
+        const range = document.createRange();
+        range.selectNodeContents(preview);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        document.execCommand("copy");
+        selection.removeAllRanges();
+        alert("Copied content.");
       }
-
-      if (!res.ok) {
-        throw new Error(
-          data.error ||
-          data.timeoutHint ||
-          'Request failed'
-        );
-      }
-
-      lastHtml = data.html;
-
-      preview.innerHTML = lastHtml;
-
-      status.textContent =
-        `Done. ${data.imagesPreserved || 0} image(s) preserved.`;
-    } catch (err) {
-      status.textContent = '';
-
-      preview.innerHTML =
-        `<p style="color:#b91c1c;"><b>Error:</b> ${err.message}</p>`;
-    }
-  }
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    processRefine(false);
-  });
-
-  document.getElementById('textOnlyBtn').addEventListener('click', async () => {
-    processRefine(true);
-  });
-
-  document.getElementById('copyRich').addEventListener('click', async () => {
-    if (!lastHtml) {
-      copyStatus.textContent = 'Nothing to copy yet.';
-      return;
     }
 
-    try {
-      const blobHtml = new Blob([lastHtml], { type: 'text/html' });
-      const blobText = new Blob([preview.innerText], { type: 'text/plain' });
-
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html': blobHtml,
-          'text/plain': blobText
-        })
-      ]);
-
-      copyStatus.textContent = 'Copied. Paste into HubSpot editor.';
-    } catch (err) {
-      const range = document.createRange();
-
-      range.selectNodeContents(preview);
-
-      const sel = window.getSelection();
-
-      sel.removeAllRanges();
-      sel.addRange(range);
-
-      copyStatus.textContent =
-        'Copy API blocked. Content selected; press Ctrl+C.';
+    function downloadHtml() {
+      const html = latestHtml || document.getElementById("preview").innerHTML;
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "refined-output.html";
+      a.click();
+      URL.revokeObjectURL(url);
     }
-  });
-
-  document.getElementById('downloadHtml').addEventListener('click', () => {
-    if (!lastHtml) {
-      copyStatus.textContent = 'Nothing to download yet.';
-      return;
-    }
-
-    const full =
-      `<!doctype html><html><head><meta charset="utf-8"><title>Refined Document</title></head><body>${lastHtml}</body></html>`;
-
-    const url =
-      URL.createObjectURL(
-        new Blob([full], { type: 'text/html' })
-      );
-
-    const a = document.createElement('a');
-
-    a.href = url;
-    a.download = 'refined-document.html';
-
-    document.body.appendChild(a);
-
-    a.click();
-    a.remove();
-
-    URL.revokeObjectURL(url);
-  });
-</script>
+  </script>
 </body>
 </html>
