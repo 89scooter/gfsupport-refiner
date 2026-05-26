@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Universal AI Refiner – GoFreight Support</title>
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -106,6 +107,7 @@
       color: #475569;
       margin-top: 14px;
       white-space: pre-line;
+      line-height: 1.5;
     }
     .preview-box {
       min-height: 260px;
@@ -135,6 +137,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="top">
     <div>
@@ -187,7 +190,7 @@
     </div>
 
     <div class="hint">
-      The system will automatically process the document in long-document mode for better stability.
+      The system will split the document in your browser and refine it section by section to avoid server timeout.
     </div>
 
     <div id="status"></div>
@@ -203,14 +206,11 @@
       <button class="secondary" onclick="copyRichContent()">Copy Rich Content</button>
       <button class="secondary" onclick="downloadHtml()">Download HTML</button>
     </div>
-
-    <div class="hint">
-      Use Copy Rich Content when pasting into editors that support formatted content and images.
-    </div>
   </div>
 
   <script>
     let latestHtml = "";
+    let imageMap = [];
 
     function logout() {
       sessionStorage.removeItem("gfsupport_refiner_logged_in");
@@ -218,68 +218,194 @@
       window.location.href = "/login.html";
     }
 
+    async function readFileAsText(file) {
+      const fileName = file.name.toLowerCase();
+
+      if (fileName.endsWith(".txt") || fileName.endsWith(".html") || fileName.endsWith(".htm")) {
+        return await file.text();
+      }
+
+      if (fileName.endsWith(".docx")) {
+        const arrayBuffer = await file.arrayBuffer();
+
+        const result = await mammoth.convertToHtml(
+          { arrayBuffer },
+          {
+            convertImage: mammoth.images.imgElement(function(image) {
+              return image.read("base64").then(function(imageBuffer) {
+                return {
+                  src: "data:" + image.contentType + ";base64," + imageBuffer
+                };
+              });
+            })
+          }
+        );
+
+        return result.value || "";
+      }
+
+      return await file.text();
+    }
+
+    function protectImages(html) {
+      imageMap = [];
+
+      return html.replace(/<img[^>]*>/gi, function(match) {
+        const placeholder = `[[GOFREIGHT_IMAGE_${imageMap.length + 1}]]`;
+        imageMap.push({
+          placeholder,
+          html: match
+        });
+        return placeholder;
+      });
+    }
+
+    function restoreImages(html) {
+      let restored = html;
+
+      imageMap.forEach(function(item) {
+        restored = restored.split(item.placeholder).join(item.html);
+      });
+
+      return restored;
+    }
+
+    function splitHtmlIntoChunks(html, maxChars = 5500) {
+      const prepared = html
+        .replace(/<\/(h1|h2|h3|h4|p|li|tr|table|ul|ol|div)>/gi, "</$1>\n");
+
+      const blocks = prepared
+        .split("\n")
+        .map(function(part) {
+          return part.trim();
+        })
+        .filter(Boolean);
+
+      const chunks = [];
+      let current = "";
+
+      blocks.forEach(function(block) {
+        if ((current + "\n" + block).length > maxChars && current.length > 0) {
+          chunks.push(current);
+          current = block;
+        } else {
+          current += (current ? "\n" : "") + block;
+        }
+      });
+
+      if (current.trim()) {
+        chunks.push(current.trim());
+      }
+
+      if (chunks.length === 0 && html.trim()) {
+        chunks.push(html.trim());
+      }
+
+      return chunks;
+    }
+
+    function updateStatus(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    async function refineOneSection(payload) {
+      const response = await fetch("/api/refine", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const rawText = await response.text();
+
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (error) {
+        throw new Error(rawText || "Server returned non-JSON response.");
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || "Server error.");
+      }
+
+      return data.html || "";
+    }
+
     async function processRefine() {
-      const guideline = document.getElementById("guideline").files[0];
-      const doc = document.getElementById("document").files[0];
+      const guidelineFile = document.getElementById("guideline").files[0];
+      const documentFile = document.getElementById("document").files[0];
       const model = document.getElementById("model").value;
       const mode = document.getElementById("mode").value;
       const preview = document.getElementById("preview");
-      const status = document.getElementById("status");
       const button = document.getElementById("processBtn");
 
-      if (!guideline || !doc) {
+      if (!guidelineFile || !documentFile) {
         preview.innerHTML = '<span class="error">Error: Please upload both guideline and document.</span>';
         return;
       }
 
-      const formData = new FormData();
-      formData.append("guideline", guideline);
-      formData.append("document", doc);
-      formData.append("model", model);
-      formData.append("mode", mode);
-
       button.disabled = true;
       latestHtml = "";
+      imageMap = [];
       preview.innerHTML = "Processing...";
-      status.textContent =
-        "Reading files...\n" +
-        "Splitting document...\n" +
-        "Refining document section by section...\n" +
-        "This may take longer for large documents.";
 
       try {
-        const response = await fetch("/api/refine", {
-          method: "POST",
-          body: formData
-        });
+        updateStatus("Reading files...");
 
-        const rawText = await response.text();
+        const guidelineHtml = await readFileAsText(guidelineFile);
+        const documentHtml = await readFileAsText(documentFile);
 
-let data;
-try {
-  data = JSON.parse(rawText);
-} catch (e) {
-  throw new Error(rawText || "Server returned non-JSON response.");
-}
+        updateStatus("Protecting images and splitting document...");
 
-if (!response.ok) {
-  throw new Error(data.error || "Server timeout or invalid response.");
-}
+        const protectedDocumentHtml = protectImages(documentHtml);
+        const chunks = splitHtmlIntoChunks(protectedDocumentHtml, 5500);
 
-        latestHtml = data.html || "";
-        preview.innerHTML = latestHtml || "No refined content returned.";
+        if (chunks.length === 0) {
+          throw new Error("No content found in the uploaded document.");
+        }
 
-        status.textContent =
-          "Done.\n" +
-          `Sections processed: ${data.sectionsProcessed || 1}\n` +
-          `Images preserved: ${data.imagesPreserved || 0}`;
+        const refinedChunks = [];
+
+        for (let i = 0; i < chunks.length; i++) {
+          updateStatus(
+            `Reading files... done\n` +
+            `Images detected: ${imageMap.length}\n` +
+            `Sections detected: ${chunks.length}\n` +
+            `Refining section ${i + 1}/${chunks.length}...`
+          );
+
+          const refinedHtml = await refineOneSection({
+            guideline: guidelineHtml,
+            sectionHtml: chunks[i],
+            model,
+            mode,
+            sectionIndex: i + 1,
+            totalSections: chunks.length
+          });
+
+          refinedChunks.push(refinedHtml);
+
+          const partialHtml = restoreImages(refinedChunks.join("\n\n"));
+          latestHtml = partialHtml;
+          preview.innerHTML = partialHtml;
+        }
+
+        latestHtml = restoreImages(refinedChunks.join("\n\n"));
+        preview.innerHTML = latestHtml;
+
+        updateStatus(
+          `Done.\n` +
+          `Sections processed: ${chunks.length}\n` +
+          `Images preserved: ${imageMap.length}`
+        );
       } catch (error) {
-        preview.innerHTML =
-          '<span class="error">Error: ' +
-          error.message +
-          '</span>';
-        status.textContent =
-          "Failed.\nIf this is a very large or image-heavy document, try reducing file size or splitting the article into smaller parts.";
+        preview.innerHTML = '<span class="error">Error: ' + error.message + '</span>';
+        updateStatus(
+          `Failed.\n` +
+          `The process stopped before completion. If this document is very large, try again or split it into smaller articles.`
+        );
       } finally {
         button.disabled = false;
       }
