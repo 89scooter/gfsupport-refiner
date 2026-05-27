@@ -47,7 +47,6 @@ LIMITED PROOFREAD MODE:
 - Do not add new sections unless the current content is clearly broken or incomplete.
 - Do not remove content unless it is duplicated, clearly incorrect, or unreadable.
 - Keep the output close to the original article.
-- Prioritize preserving the author's original writing style.
 `,
 
     balanced: `
@@ -55,35 +54,40 @@ BALANCED REFINEMENT MODE:
 - Improve the article based on the GoFreight Knowledge Base Writing Guideline while generally preserving the original article scope.
 - Improve clarity, readability, tone, structure, headings, and formatting when helpful.
 - Moderate rewriting is allowed when it improves customer understanding.
-- You may add a simple overview if the article does not clearly explain its purpose.
-- You may clarify expected system behavior when the original article is vague.
-- You may improve troubleshooting steps so they are easier for customers to follow.
+- You may add a simple overview if missing.
+- You may clarify expected system behavior when helpful.
+- You may improve troubleshooting steps.
 - You may rewrite vague headings into clearer and more searchable headings.
 - You may improve FAQ wording when answers are too short or unclear.
-- You may improve screenshot guidance wording.
-- If the article combines unrelated topics, you may suggest clearer separation within the article, but do not aggressively split unless necessary.
+- If the article combines unrelated topics, keep the article mostly intact but add clearer sections.
 - Do not remove important business, operational, or technical information.
-- Keep the article customer-friendly, operationally clear, and easy for AI-powered support tools to retrieve.
 `,
 
     creative: `
 GUIDELINE STRICT REWRITE MODE:
 - Strictly follow the GoFreight Knowledge Base Writing Guideline.
 - Do not simply proofread.
-- Your responsibility is to actively transform the article into a customer-friendly, operationally clear, and AI-friendly Knowledge Base article.
+- Act like a Knowledge Base architect, not only an editor.
 
 Primary goals:
-- Improve customer readability
-- Improve operational clarity
-- Improve AI retrieval quality
-- Improve article structure and searchability
-- Reduce vague or confusing content
+- Improve customer readability.
+- Improve operational clarity.
+- Improve searchability and AI retrieval quality.
+- Make the article easier to follow as a customer-facing support article.
+- Reduce broad, vague, or mixed-topic content.
+
+Scope control:
+- If the article combines multiple independent workflows, do NOT keep it as one broad all-in-one article without explanation.
+- Rewrite the article title into the best focused title possible based on the strongest or most useful article topic.
+- If multiple independent topics remain, add a short "Recommended Article Split" section at the end.
+- In "Recommended Article Split", list suggested separate article titles.
+- Do not fully create all split articles unless the source content already supports them.
+- Prefer one clear operational workflow per article whenever possible.
 
 You should:
 - Restructure the article when necessary.
 - Rewrite vague headings into searchable and customer-friendly headings.
 - Rewrite broad or unclear titles into focused titles.
-- Split unrelated topics into separate sections or clearly suggest separate article topics when appropriate.
 - Replace generic wording with operationally clear instructions.
 - Improve troubleshooting clarity and actionability.
 - Rewrite poor FAQ answers into complete and meaningful answers.
@@ -95,19 +99,23 @@ You should:
 - Use step-by-step instructions whenever they improve readability.
 - Convert vague paragraphs into structured sections, bullets, or tables when helpful.
 - Prioritize customer readability over preserving the original wording or structure.
-- If the article combines multiple independent workflows, prefer narrowing the article scope instead of keeping a broad all-in-one article.
-- Focus on one operational workflow whenever possible.
-- It is acceptable to rewrite the title into a narrower and more focused topic.
+
+FAQ rules:
+- Never leave FAQ answers as only "Yes" or "No."
+- FAQ answers must include useful operational guidance, conditions, next steps, or limitations.
+- If the source does not provide enough detail, say what the user can do next instead of inventing details.
+
+Screenshot rules:
+- Never rely only on screenshots to explain workflows.
+- If screenshots are referenced, explicitly mention that important fields, buttons, or sections should be highlighted with boxes, arrows, numbering, labels, or focused cropping.
+- If the screenshot appears broad in scope based on the surrounding text, add guidance to crop or focus on the relevant area.
+- Keep image placeholders exactly as written.
 
 Hard rules:
 - Never keep titles that combine unrelated workflows if a clearer focused title is possible.
-- Never leave FAQ answers as only "Yes" or "No."
 - Never keep vague section headings such as "Setup", "Tracking", "Invoice", "Issue", or "FAQ" if more specific wording can be used.
 - Never keep large unstructured paragraphs if the content can be organized more clearly.
-- Never rely only on screenshots to explain workflows.
-- When screenshots are referenced, explicitly encourage using highlighted annotations, arrows, boxes, numbering, or focused cropping to help customers identify important fields.
 - If the original article structure is poor, prioritize restructuring over preserving the original format.
-- If the article covers too many unrelated workflows, prioritize clarity and recommend clearer separation.
 - Prioritize searchable and AI-retrievable headings over generic wording.
 - Do not invent product behavior, policy, system limitations, or troubleshooting steps that are not supported by the source content.
 
@@ -124,7 +132,7 @@ The output should feel like:
 
 function getTemperature(mode) {
   if (mode === "strict") return 0.1;
-  if (mode === "creative") return 0.35;
+  if (mode === "creative") return 0.3;
   return 0.25;
 }
 
@@ -171,9 +179,9 @@ Core rules:
 10. Prioritize customer readability, operational clarity, searchability, and AI-friendly structure.
 11. If the article mentions screenshots or images, improve the surrounding text guidance, but do not attempt to analyze or modify the actual image.
 12. If the input is too broad or combines unrelated topics, handle it according to the selected refinement mode.
-13. If the article title is overly broad, unclear, or combines unrelated workflows, rewrite it into a more focused and searchable title.
-14. Prefer operationally searchable wording over generic wording.
-15. FAQ answers should contain meaningful operational guidance instead of only "Yes" or "No".
+13. In strict rewrite mode, add a "Recommended Article Split" section when the source combines multiple independent workflows.
+14. FAQ answers should contain meaningful operational guidance instead of only "Yes" or "No".
+15. Prefer operationally searchable wording over generic wording.
 
 SELECTED REFINEMENT MODE:
 ${getModeInstruction(mode)}
