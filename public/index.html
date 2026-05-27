@@ -71,6 +71,21 @@
       color: #64748b;
       margin-top: 10px;
     }
+    .mode-hint {
+      margin-top: 12px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .mode-hint strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #1d4ed8;
+    }
     .button-row {
       margin-top: 24px;
       display: flex;
@@ -177,11 +192,13 @@
 
       <div>
         <label>Refinement Level</label>
-        <select id="mode">
+        <select id="mode" onchange="updateModeHint()">
           <option value="strict">Light proofread</option>
           <option value="balanced">Balanced</option>
           <option value="creative" selected>More rewrite</option>
         </select>
+
+        <div id="modeHint" class="mode-hint"></div>
       </div>
     </div>
 
@@ -211,6 +228,31 @@
   <script>
     let latestHtml = "";
     let imageMap = [];
+
+    const modeHints = {
+      strict: {
+        title: "Light proofread",
+        text: "Light cleanup only. AI will preserve the original structure and mainly improve grammar, wording, tone, formatting, and readability."
+      },
+      balanced: {
+        title: "Balanced",
+        text: "Recommended for most articles. AI will improve readability, headings, formatting, troubleshooting clarity, and customer understanding while keeping the original article scope."
+      },
+      creative: {
+        title: "More rewrite",
+        text: "Strong KB refinement. AI will improve structure, FAQ quality, troubleshooting clarity, expected behavior, permission or limitation wording, and support-friendly language while preserving the article scope."
+      }
+    };
+
+    function updateModeHint() {
+      const mode = document.getElementById("mode").value;
+      const hint = modeHints[mode] || modeHints.balanced;
+
+      document.getElementById("modeHint").innerHTML =
+        "<strong>" + hint.title + "</strong>" + hint.text;
+    }
+
+    updateModeHint();
 
     function logout() {
       sessionStorage.removeItem("gfsupport_refiner_logged_in");
@@ -390,20 +432,20 @@
           const partialHtml = restoreImages(refinedChunks.join("\n\n"));
           latestHtml = partialHtml;
           preview.innerHTML =
-  '<div style="margin-bottom:16px;color:#64748b;font-weight:bold;">Partial Preview — processing is still running...</div>' +
-  partialHtml;
+            '<div style="margin-bottom:16px;color:#64748b;font-weight:bold;">Partial Preview — processing is still running...</div>' +
+            partialHtml;
         }
 
         latestHtml = restoreImages(refinedChunks.join("\n\n"));
         preview.innerHTML =
-  '<div style="margin-bottom:16px;color:#16a34a;font-weight:bold;">Completed — refined document is ready.</div>' +
-  latestHtml;
+          '<div style="margin-bottom:16px;color:#16a34a;font-weight:bold;">Completed — refined document is ready.</div>' +
+          latestHtml;
 
-updateStatus(
-  `Completed.\n` +
-  `Sections processed: ${chunks.length}/${chunks.length}\n` +
-  `Images preserved: ${imageMap.length}`
-);
+        updateStatus(
+          `Completed.\n` +
+          `Sections processed: ${chunks.length}/${chunks.length}\n` +
+          `Images preserved: ${imageMap.length}`
+        );
       } catch (error) {
         preview.innerHTML = '<span class="error">Error: ' + error.message + '</span>';
         updateStatus(
