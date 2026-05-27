@@ -53,28 +53,48 @@ BALANCED REFINEMENT MODE:
 GUIDELINE STRICT REWRITE MODE:
 - Strictly follow the GoFreight Knowledge Base Writing Guideline.
 - Do not simply proofread.
-- Actively transform the article into a customer-friendly, operationally clear, and AI-friendly Knowledge Base article.
+- Your responsibility is to actively transform the article into a customer-friendly, operationally clear, and AI-friendly Knowledge Base article.
+
+Primary goals:
+- Improve customer readability
+- Improve operational clarity
+- Improve AI retrieval quality
+- Improve article structure and searchability
+- Reduce vague or confusing content
 
 You should:
 - Restructure the article when necessary.
 - Rewrite vague headings into searchable and customer-friendly headings.
-- Split unrelated topics into separate sections or clearly suggest separate article topics when needed.
+- Rewrite broad or unclear titles into focused titles.
+- Split unrelated topics into separate sections or clearly suggest separate article topics when appropriate.
 - Replace generic wording with operationally clear instructions.
 - Improve troubleshooting clarity and actionability.
 - Rewrite poor FAQ answers into complete and meaningful answers.
 - Add a simple overview if missing.
-- Add system limitation, permission scope, or expected behavior explanations when applicable.
+- Add expected system behavior explanations when applicable.
+- Add permission scope or system limitation explanations when applicable.
 - Improve screenshot guidance based on the guideline.
 - Remove unnecessary, repetitive, confusing, or low-value content.
-- Use step-by-step instructions when they make the workflow easier to follow.
-- Prioritize customer readability over preserving the original structure.
+- Use step-by-step instructions whenever they improve readability.
+- Convert vague paragraphs into structured sections, bullets, or tables when helpful.
+- Prioritize customer readability over preserving the original wording or structure.
 
 Hard rules:
 - Never keep titles that combine unrelated workflows if a clearer focused title is possible.
 - Never leave FAQ answers as only "Yes" or "No."
-- Never keep vague section headings such as "Setup", "Tracking", "Invoice", or "Issue" if a more specific heading can be used.
+- Never keep vague section headings such as "Setup", "Tracking", "Invoice", "Issue", or "FAQ" if more specific wording can be used.
+- Never keep large unstructured paragraphs if the content can be organized more clearly.
+- Never rely only on screenshots to explain workflows.
+- If screenshots are mentioned, encourage highlighted annotations, boxes, arrows, numbering, or focused cropping when appropriate.
 - If the original article structure is poor, prioritize restructuring over preserving the original format.
+- If the article covers too many unrelated workflows, prioritize clarity and recommend clearer separation.
 - Do not invent product behavior, policy, system limitations, or troubleshooting steps that are not supported by the source content.
+
+The output should feel like:
+- a professionally rewritten SaaS Knowledge Base article
+- not a lightly proofread draft
+- not a grammar cleanup
+`
 `
   };
 
