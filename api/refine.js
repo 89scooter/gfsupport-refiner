@@ -21,6 +21,20 @@ function cleanAiHtml(content) {
     .trim();
 }
 
+function sanitizeHtml(html) {
+  if (!html) return "";
+
+  let imageCounter = 1;
+
+  return html
+    .replace(
+      /<img[^>]*src="data:image\/[^"]+"[^>]*>/gi,
+      () => `[[GOFREIGHT_IMAGE_${imageCounter++}]]`
+    )
+    .replace(/\s{3,}/g, " ")
+    .trim();
+}
+
 function getModeInstruction(mode) {
   const map = {
     strict: `
@@ -95,7 +109,6 @@ The output should feel like:
 - not a lightly proofread draft
 - not a grammar cleanup
 `
-`
   };
 
   return map[mode] || map.balanced;
@@ -118,10 +131,6 @@ export default async function handler(req, res) {
     const {
       guideline,
       sectionHtml,
-      const cleanedSectionHtml = (sectionHtml || "").replace(
-  /<img[^>]*src="data:image\/[^"]+"[^>]*>/gi,
-  "[[GOFREIGHT_IMAGE_PLACEHOLDER]]"
-);
       model = "gpt-4o-mini",
       mode = "balanced",
       sectionIndex = 1,
@@ -133,6 +142,8 @@ export default async function handler(req, res) {
         error: "Missing guideline or sectionHtml."
       });
     }
+
+    const cleanedSectionHtml = sanitizeHtml(sectionHtml);
 
     const systemPrompt = `
 You are a professional editor for GoFreight Support documentation.
@@ -180,7 +191,9 @@ ${cleanedSectionHtml}
       ]
     });
 
-    const html = cleanAiHtml(completion.choices?.[0]?.message?.content || "");
+    const html = cleanAiHtml(
+      completion.choices?.[0]?.message?.content || ""
+    );
 
     return res.status(200).json({
       html,
