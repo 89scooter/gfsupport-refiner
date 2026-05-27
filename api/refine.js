@@ -43,10 +43,11 @@ LIMITED PROOFREAD MODE:
 - Focus only on grammar, spelling, punctuation, formatting, tone, wording, and readability.
 - Do not heavily rewrite the article.
 - Do not restructure, merge, split, or reorder sections.
-- Do not change headings unless they contain grammar issues or are clearly unclear.
+- Do not significantly change headings unless they contain grammar issues or are clearly unclear.
 - Do not add new sections unless the current content is clearly broken or incomplete.
 - Do not remove content unless it is duplicated, clearly incorrect, or unreadable.
 - Keep the output close to the original article.
+- Prioritize preserving the author's original writing style.
 `,
 
     balanced: `
@@ -58,6 +59,8 @@ BALANCED REFINEMENT MODE:
 - You may clarify expected system behavior when the original article is vague.
 - You may improve troubleshooting steps so they are easier for customers to follow.
 - You may rewrite vague headings into clearer and more searchable headings.
+- You may improve FAQ wording when answers are too short or unclear.
+- You may improve screenshot guidance wording.
 - If the article combines unrelated topics, you may suggest clearer separation within the article, but do not aggressively split unless necessary.
 - Do not remove important business, operational, or technical information.
 - Keep the article customer-friendly, operationally clear, and easy for AI-powered support tools to retrieve.
@@ -92,6 +95,9 @@ You should:
 - Use step-by-step instructions whenever they improve readability.
 - Convert vague paragraphs into structured sections, bullets, or tables when helpful.
 - Prioritize customer readability over preserving the original wording or structure.
+- If the article combines multiple independent workflows, prefer narrowing the article scope instead of keeping a broad all-in-one article.
+- Focus on one operational workflow whenever possible.
+- It is acceptable to rewrite the title into a narrower and more focused topic.
 
 Hard rules:
 - Never keep titles that combine unrelated workflows if a clearer focused title is possible.
@@ -99,15 +105,17 @@ Hard rules:
 - Never keep vague section headings such as "Setup", "Tracking", "Invoice", "Issue", or "FAQ" if more specific wording can be used.
 - Never keep large unstructured paragraphs if the content can be organized more clearly.
 - Never rely only on screenshots to explain workflows.
-- If screenshots are mentioned, encourage highlighted annotations, boxes, arrows, numbering, or focused cropping when appropriate.
+- When screenshots are referenced, explicitly encourage using highlighted annotations, arrows, boxes, numbering, or focused cropping to help customers identify important fields.
 - If the original article structure is poor, prioritize restructuring over preserving the original format.
 - If the article covers too many unrelated workflows, prioritize clarity and recommend clearer separation.
+- Prioritize searchable and AI-retrievable headings over generic wording.
 - Do not invent product behavior, policy, system limitations, or troubleshooting steps that are not supported by the source content.
 
 The output should feel like:
 - a professionally rewritten SaaS Knowledge Base article
 - not a lightly proofread draft
 - not a grammar cleanup
+- not an AI-generated generic article
 `
   };
 
@@ -163,6 +171,9 @@ Core rules:
 10. Prioritize customer readability, operational clarity, searchability, and AI-friendly structure.
 11. If the article mentions screenshots or images, improve the surrounding text guidance, but do not attempt to analyze or modify the actual image.
 12. If the input is too broad or combines unrelated topics, handle it according to the selected refinement mode.
+13. If the article title is overly broad, unclear, or combines unrelated workflows, rewrite it into a more focused and searchable title.
+14. Prefer operationally searchable wording over generic wording.
+15. FAQ answers should contain meaningful operational guidance instead of only "Yes" or "No".
 
 SELECTED REFINEMENT MODE:
 ${getModeInstruction(mode)}
