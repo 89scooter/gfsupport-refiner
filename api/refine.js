@@ -118,6 +118,10 @@ export default async function handler(req, res) {
     const {
       guideline,
       sectionHtml,
+      const cleanedSectionHtml = (sectionHtml || "").replace(
+  /<img[^>]*src="data:image\/[^"]+"[^>]*>/gi,
+  "[[GOFREIGHT_IMAGE_PLACEHOLDER]]"
+);
       model = "gpt-4o-mini",
       mode = "balanced",
       sectionIndex = 1,
@@ -158,7 +162,7 @@ ${getModeInstruction(mode)}
 ${guideline}
 
 === DOCUMENT SECTION ${sectionIndex} OF ${totalSections} ===
-${sectionHtml}
+${cleanedSectionHtml}
 `;
 
     const completion = await client.chat.completions.create({
