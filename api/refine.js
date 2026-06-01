@@ -2,7 +2,7 @@ const OpenAI = require("openai");
 const fs = require("fs");
 const path = require("path");
 
-export const config = {
+const config = {
   api: {
     bodyParser: {
       sizeLimit: "5mb"
@@ -10,6 +10,8 @@ export const config = {
   },
   maxDuration: 60
 };
+
+module.exports.config = config;
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -171,7 +173,7 @@ function getTemperature(mode) {
   return 0.22;
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Method not allowed"
@@ -268,5 +270,7 @@ ${cleanedSectionHtml}
     return res.status(500).json({
       error: error?.message || "Unexpected server error."
     });
+    module.exports = handler;
+module.exports.config = config;
   }
 }
