@@ -1,6 +1,6 @@
-import OpenAI from "openai";
-import fs from "fs";
-import path from "path";
+const OpenAI = require("openai");
+const fs = require("fs");
+const path = require("path");
 
 export const config = {
   api: {
@@ -171,7 +171,7 @@ function getTemperature(mode) {
   return 0.22;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
       error: "Method not allowed"
