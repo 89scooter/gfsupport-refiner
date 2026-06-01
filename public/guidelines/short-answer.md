@@ -2,35 +2,65 @@
 
 ## Purpose
 
-Create a concise, reusable Short Answer for HubSpot AI knowledge.
+Create concise, reusable Short Answers for HubSpot AI knowledge.
 
-Short Answer is not a ticket reply.
-Short Answer is not a full Knowledge Base article.
-Short Answer is a reusable Q&A entry for future AI recommendations.
+Short Answer is not:
+
+* a ticket reply
+* a customer email
+* a Knowledge Base article
+
+Short Answer is a reusable Q&A entry designed for future AI recommendations.
 
 ---
 
 ## Required Output Format
 
-Return only the following format:
+Return HTML only.
 
-Question:
-[One clear customer-style question]
+Output structure:
 
-Short Answer:
-[One concise reusable answer]
+<p><strong>Question:</strong></p>
+
+<p>[Rewrite into one searchable customer question]</p>
+
+<p><strong>Short Answer:</strong></p>
+
+<p>[Provide one concise reusable answer]</p>
+
+Optional:
+
+<ul>
+<li>[Step or action]</li>
+<li>[Step or action]</li>
+</ul>
+
+Formatting Rules:
+
+* Always separate Question and Short Answer.
+* Use HTML paragraphs.
+* Use bullets only if they improve readability.
+* Do not force steps when one sentence is sufficient.
+* Never output everything in one paragraph.
+* Maximum 120 words.
 
 ---
 
 ## Question Rules
 
-Rewrite the customer question into a clear, searchable question.
+Rewrite the customer question into a clear and searchable question.
 
 Good:
+
 How can I review negative profit shipments?
 
+How do I copy a shipment?
+
 Avoid:
-Is there a function or tab for our accounting to review the negative profit shipments?
+
+Is there a function or tab for our accounting to review negative profit shipments?
+
+Question regarding shipment report
 
 ---
 
@@ -38,11 +68,25 @@ Is there a function or tab for our accounting to review the negative profit ship
 
 The Short Answer must:
 
-- Directly answer the question in the first sentence.
-- Be reusable without ticket context.
-- Use product navigation if applicable.
-- Be concise and operational.
-- Stay between 50–150 words when possible.
+* Start with the answer immediately.
+* Prefer action-first wording.
+* Be reusable without ticket context.
+* Use product navigation if applicable.
+* Stay concise and operational.
+
+Good:
+
+Go to Report > Volume & Profit Report.
+
+Open Negative Profit Shipments Report.
+
+Avoid:
+
+Users can access...
+
+Customers can review...
+
+The accounting team can...
 
 ---
 
@@ -50,29 +94,36 @@ The Short Answer must:
 
 Do not include:
 
-- Customer names
-- Agent names
-- Greetings
-- Email-style opening or closing
-- Ticket-specific background
-- Internal notes
-- Apologies
-- “Dear customer”
-- “Good day”
-- “Please contact support”
+* Customer names
+* Agent names
+* Greetings
+* Email opening or closing
+* Ticket background
+* Internal notes
+* Apologies
+* “Dear customer”
+* “Good day”
+* “Please contact support”
 
 ---
 
 ## Knowledge Rules
 
-Do not invent product behavior, permissions, limitations, or troubleshooting steps.
+Do not invent:
 
-Only use information provided in the source content.
+* product behavior
+* permissions
+* limitations
+* troubleshooting steps
 
-If the source content is not enough to create a reliable Short Answer, return:
+Use only information provided in the source content.
 
-Question:
-Unable to determine
+If information is insufficient:
 
-Short Answer:
-The provided content does not contain enough validated information to create a reusable Short Answer.
+<p><strong>Question:</strong></p>
+
+<p>Unable to determine</p>
+
+<p><strong>Short Answer:</strong></p>
+
+<p>The provided content does not contain enough validated information to generate a reusable Short Answer.</p>
