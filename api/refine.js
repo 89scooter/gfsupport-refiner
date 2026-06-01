@@ -11,8 +11,6 @@ const config = {
   maxDuration: 60
 };
 
-module.exports.config = config;
-
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -35,6 +33,7 @@ function loadGuideline(contentType = "article") {
 
   return fs.readFileSync(filePath, "utf-8");
 }
+
 function cleanAiHtml(content) {
   return (content || "")
     .replace(/^```html\s*/i, "")
@@ -61,106 +60,26 @@ function getModeInstruction(mode) {
   const map = {
     strict: `
 LIMITED PROOFREAD MODE:
-- Preserve the original article structure, wording, intent, and flow as much as possible.
+- Preserve the original structure, wording, intent, and flow as much as possible.
 - Focus only on grammar, spelling, punctuation, formatting, tone, wording, and readability.
-- Do not heavily rewrite the article.
-- Do not restructure, merge, split, or reorder sections.
-- Do not significantly change headings unless they contain grammar issues or are clearly unclear.
-- Do not add new sections unless the current content is clearly broken or incomplete.
-- Do not remove content unless it is duplicated, clearly incorrect, or unreadable.
-- Keep the output close to the original article.
-- Prioritize preserving the author's original writing style.
+- Do not heavily rewrite.
 `,
 
     balanced: `
 BALANCED REFINEMENT MODE:
-- Improve the article based on the GoFreight Knowledge Base Writing Guideline while generally preserving the original article scope and structure.
 - Improve clarity, readability, tone, formatting, and customer understanding.
-- Moderate rewriting is allowed when it improves readability or troubleshooting clarity.
-- You may improve headings to make them more customer-friendly and searchable.
-- You may add a simple overview if missing.
-- You may clarify expected system behavior when helpful.
-- You may improve troubleshooting instructions to make them easier to follow.
-- You may improve FAQ wording when answers are too short or unclear.
-- Keep the article operationally clear and suitable for AI-powered retrieval.
+- Moderate rewriting is allowed when it improves readability.
+- Keep the original scope.
 - Do not remove important business, operational, or technical information.
 `,
 
     creative: `
-STRONG KB REFINEMENT MODE:
-- Strictly follow the GoFreight Knowledge Base Writing Guideline.
-- Do not simply proofread.
-- Your responsibility is to strongly improve the article while preserving the original article scope and purpose.
-
-Primary goals:
-- Improve customer readability.
-- Improve operational clarity.
-- Improve troubleshooting quality.
-- Improve FAQ usefulness.
-- Improve AI retrieval quality.
-- Improve formatting and article structure.
-- Reduce vague or confusing wording.
-
-You should:
-- Restructure sections when necessary for readability.
+STRONG REFINEMENT MODE:
+- Strongly improve structure, clarity, formatting, troubleshooting quality, and AI retrieval quality.
 - Rewrite vague headings into clearer and more searchable headings.
-- Improve wording to make instructions operationally clear.
-- Improve troubleshooting clarity and actionability.
-- Rewrite weak FAQ answers into meaningful operational answers.
-- Improve wording so customers understand what to do next.
-- Add expected system behavior explanations when applicable.
-- Add permission scope or system limitation explanations when applicable.
-- Improve formatting using headings, bullets, numbering, or tables when helpful.
 - Convert large paragraphs into clearer step-by-step instructions when appropriate.
-- Remove repetitive, confusing, or low-value wording.
-- Prioritize customer readability over preserving weak wording.
-- Use concise, operational, and support-friendly wording whenever possible.
-
-FAQ rules:
-- Never leave FAQ answers as only "Yes" or "No."
-- FAQ answers should include useful operational guidance, conditions, limitations, or next steps whenever possible.
-- FAQ answers should help customers decide what to do next.
-- If the source content does not provide enough detail, provide the safest helpful explanation without inventing unsupported product behavior.
-
-Screenshot rules:
-- Do not attempt to analyze or modify screenshots.
-- Screenshot quality, annotations, arrows, highlighting, cropping, and visual clarity are responsibilities of the article writer or reviewer.
-- If screenshots are referenced in the article, improve the surrounding explanation text so customers can better understand what to focus on.
-
-Title rules:
-- Preserve the original article scope.
-- Do not split the article into multiple articles.
-- Do not rewrite the article into a different operational topic.
-- However, improve title readability and searchability when appropriate.
-- Avoid special symbols in titles whenever possible.
-
-Avoid these symbols in titles:
-% # ? & + = / \\ : ; ' " ( ) , @ ! *
-
-Navigation wording rules:
-- Avoid vague wording such as "setup section", "setting page", or "configuration area" when clearer wording can be used.
-- Prefer operational navigation wording when available.
-- Example:
-  - Better: "Go to My Profile > Email Settings"
-  - Worse: "Go to the setup section"
-
-Support tone rules:
-- Keep the writing concise, direct, operational, and helpful.
-- Avoid robotic or overly generic AI wording.
-- Avoid excessive politeness or marketing-style language.
-- Write like an experienced SaaS support specialist.
-
-Hard rules:
-- Never keep vague section headings such as "Setup", "Issue", or "FAQ" if clearer wording can be used.
-- Never keep large unstructured paragraphs if the content can be organized more clearly.
-- Prioritize searchable and AI-friendly wording over generic wording.
-- Do not invent product behavior, policy, limitations, or troubleshooting steps that are not supported by the source content.
-
-The output should feel like:
-- a professionally refined SaaS Knowledge Base article
-- not a lightly proofread draft
-- not a grammar cleanup
-- not a generic AI-generated article
+- Keep the tone concise, direct, operational, and support-friendly.
+- Do not invent product behavior, policy, limitations, or troubleshooting steps.
 `
   };
 
@@ -182,27 +101,22 @@ async function handler(req, res) {
 
   try {
     const {
-  contentType = "article",
-  sectionHtml,
-  model = "gpt-4o-mini",
-  mode = "balanced",
-  sectionIndex = 1,
-  totalSections = 1
-} = req.body || {};
+      contentType = "article",
+      sectionHtml,
       model = "gpt-4o-mini",
       mode = "balanced",
       sectionIndex = 1,
       totalSections = 1
     } = req.body || {};
 
-    if (!sectionHtml)
+    if (!sectionHtml) {
       return res.status(400).json({
         error: "Missing sectionHtml."
       });
     }
 
+    const guideline = loadGuideline(contentType);
     const cleanedSectionHtml = sanitizeHtml(sectionHtml);
-const guideline = loadGuideline(contentType);
 
     const systemPrompt = `
 You are a professional editor for GoFreight Support documentation.
@@ -212,21 +126,13 @@ Your task is to refine one section according to the selected refinement profile 
 Core rules:
 1. Return valid HTML only.
 2. Do not wrap the response in markdown code fences.
-3. Preserve tables, bullets, numbering, headings, links, and formatting where possible unless the selected refinement mode allows restructuring.
+3. Preserve tables, bullets, numbering, headings, links, and formatting where possible.
 4. Keep image placeholders exactly as written, such as [[GOFREIGHT_IMAGE_1]].
 5. Do not remove important technical, operational, or business information.
-6. Do not invent product behavior, policy, steps, system limitations, timelines, or troubleshooting details.
+6. Do not invent product behavior, policy, steps, limitations, timelines, or troubleshooting details.
 7. This is section ${sectionIndex} of ${totalSections}. Refine only this section.
-8. Do not add artificial section labels unless they already exist or the selected refinement mode requires clearer structure.
-9. Keep the output suitable for GoFreight customer-facing or internal support documentation.
-10. Prioritize customer readability, operational clarity, searchability, and AI-friendly structure.
-11. If screenshots are referenced, improve the surrounding explanation text, but do not attempt to review image quality itself.
-12. Preserve the original article scope and operational topic.
-13. FAQ answers should contain meaningful operational guidance instead of only "Yes" or "No".
-14. Prefer operationally searchable wording over generic wording.
-15. Avoid unnecessary special symbols in titles whenever possible.
-16. Avoid vague navigation wording when clearer operational navigation wording can be used.
-17. Keep the tone concise, support-oriented, and operationally helpful.
+8. Keep the output suitable for GoFreight customer-facing or internal support documentation.
+9. Prioritize readability, operational clarity, searchability, and AI-friendly structure.
 
 SELECTED REFINEMENT MODE:
 ${getModeInstruction(mode)}
@@ -270,7 +176,8 @@ ${cleanedSectionHtml}
     return res.status(500).json({
       error: error?.message || "Unexpected server error."
     });
-    module.exports = handler;
-module.exports.config = config;
   }
 }
+
+module.exports = handler;
+module.exports.config = config;
