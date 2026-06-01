@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import fs from "fs";
+import path from "path";
 
 export const config = {
   api: {
@@ -13,6 +15,32 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+function loadGuideline(contentType = "article") {
+  try {
+    const fileName =
+      contentType === "short-answer"
+        ? "short-answer.md"
+        : "article.md";
+
+    const filePath = path.join(
+      process.cwd(),
+      "public",
+      "guidelines",
+      fileName
+    );
+
+    return fs.readFileSync(filePath, "utf-8");
+
+  } catch (error) {
+    console.error("Failed to load guideline:", error);
+
+    return `
+Default refinement guideline.
+
+Keep content clear and customer-friendly.
+`;
+  }
+}
 function cleanAiHtml(content) {
   return (content || "")
     .replace(/^```html\s*/i, "")
@@ -160,26 +188,32 @@ export default async function handler(req, res) {
 
   try {
     const {
-      guideline,
-      sectionHtml,
+  contentType = "article",
+  sectionHtml,
+  model = "gpt-4o-mini",
+  mode = "balanced",
+  sectionIndex = 1,
+  totalSections = 1
+} = req.body || {};
       model = "gpt-4o-mini",
       mode = "balanced",
       sectionIndex = 1,
       totalSections = 1
     } = req.body || {};
 
-    if (!guideline || !sectionHtml) {
+    if (!sectionHtml)
       return res.status(400).json({
-        error: "Missing guideline or sectionHtml."
+        error: "Missing sectionHtml."
       });
     }
 
     const cleanedSectionHtml = sanitizeHtml(sectionHtml);
+const guideline = loadGuideline(contentType);
 
     const systemPrompt = `
 You are a professional editor for GoFreight Support documentation.
 
-Your task is to refine one section of a document according to the provided GoFreight Knowledge Base Writing Guideline and the selected refinement mode.
+Your task is to refine one section according to the selected refinement profile and guideline.
 
 Core rules:
 1. Return valid HTML only.
@@ -205,7 +239,7 @@ ${getModeInstruction(mode)}
 `;
 
     const userPrompt = `
-=== GOFREIGHT KNOWLEDGE BASE WRITING GUIDELINE ===
+=== SELECTED GUIDELINE ===
 ${guideline}
 
 === DOCUMENT SECTION ${sectionIndex} OF ${totalSections} ===
