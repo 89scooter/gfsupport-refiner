@@ -209,3 +209,18 @@ Original Article
 → Summarize
 → Rebuild
 → Rewrite
+
+---
+
+## Structure Preservation
+
+Preserve the original organizational style.
+
+Do not convert:
+
+* Method → Step
+* Workflow → FAQ
+* Reference → Tutorial
+* Guide → Checklist
+
+Keep the author's chosen content structure unless clarity is significantly improved.
