@@ -1,3 +1,15 @@
+## Latest Release
+
+Version: v1.1-beta  
+Release Date: 2026-06-01
+
+Highlights:
+- Added built-in guideline selector
+- Added Short Answer generation
+- Removed manual guideline upload
+- Improved KB refinement guardrails
+- Improved article structure preservation
+
 # GoFreight Support Universal AI Refiner - Internal Web Version
 
 ## What this is
