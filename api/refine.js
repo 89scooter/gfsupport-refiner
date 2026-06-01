@@ -16,30 +16,22 @@ const client = new OpenAI({
 });
 
 function loadGuideline(contentType = "article") {
-  try {
-    const fileName =
-      contentType === "short-answer"
-        ? "short-answer.md"
-        : "article.md";
+  const fileName =
+    contentType === "short-answer"
+      ? "short-answer.md"
+      : "article.md";
 
-    const filePath = path.join(
-      process.cwd(),
-      "public",
-      "guidelines",
-      fileName
-    );
+  const filePath = path.join(
+    process.cwd(),
+    "public/guidelines",
+    fileName
+  );
 
-    return fs.readFileSync(filePath, "utf-8");
-
-  } catch (error) {
-    console.error("Failed to load guideline:", error);
-
-    return `
-Default refinement guideline.
-
-Keep content clear and customer-friendly.
-`;
+  if (!fs.existsSync(filePath)) {
+    throw new Error("Guideline file not found: " + filePath);
   }
+
+  return fs.readFileSync(filePath, "utf-8");
 }
 function cleanAiHtml(content) {
   return (content || "")
